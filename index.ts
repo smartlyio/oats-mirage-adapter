@@ -53,8 +53,16 @@ function adapter<Registry extends mirageTypes.AnyRegistry, RequestContext>(
     const miragePath = path.replace(/{([^}]+)}/g, (m, param) => ':' + param);
     const mirageHandler: typeof mirageServer.get = (mirageServer as any)[method];
     mirageHandler(miragePath, async (schema, request) => {
+      const headers = Object
+        .keys(request.requestHeaders)
+        .reduce<Record<string, string>>((lowerCaseHeaders, key) => {
+          lowerCaseHeaders[key.toLowerCase()] = request.requestHeaders[key];
+
+          return lowerCaseHeaders;
+      }, {});
+
       const contentType = guessContentType(
-        request.requestHeaders['content-type'],
+        headers['content-type'],
         request.requestBody
       );
       const value = await guessValue(contentType, request.requestBody);
@@ -64,7 +72,7 @@ function adapter<Registry extends mirageTypes.AnyRegistry, RequestContext>(
         method,
         servers: [],
         op,
-        headers: request.requestHeaders,
+        headers,
         params: request.params,
         query: request.queryParams,
         body,
